@@ -1,0 +1,94 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowSQSOperations",
+      "Effect": "Allow",
+      "Action": [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:SendMessage",
+        "sqs:GetQueueUrl",
+        "sqs:GetQueueAttributes",
+        "sqs:SetQueueAttributes",
+        "sqs:ListQueues",
+        "sqs:CreateQueue",
+        "sqs:TagQueue",
+        "sqs:PurgeQueue"
+      ],
+      "Resource": [
+        "arn:aws:sqs:${AWS_REGION}:${AWS_ACCOUNT_ID}:payment-events.fifo",
+        "arn:aws:sqs:${AWS_REGION}:${AWS_ACCOUNT_ID}:fraud-check-requests.fifo",
+        "arn:aws:sqs:${AWS_REGION}:${AWS_ACCOUNT_ID}:risk-assessment-requests.fifo",
+        "arn:aws:sqs:${AWS_REGION}:${AWS_ACCOUNT_ID}:payment-outbox.fifo",
+        "arn:aws:sqs:${AWS_REGION}:${AWS_ACCOUNT_ID}:compensation-commands.fifo"
+      ]
+    },
+    {
+      "Sid": "AllowDynamoDBPaymentTables",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:DescribeTable",
+        "dynamodb:CreateTable",
+        "dynamodb:UpdateTable",
+        "dynamodb:TagResource",
+        "dynamodb:ListTagsOfResource"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/PaymentTable",
+        "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/PaymentOutboxTable",
+        "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/PaymentTable/index/*",
+        "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/PaymentOutboxTable/index/*"
+      ]
+    },
+    {
+      "Sid": "AllowDynamoDBStreamOperations",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetRecords",
+        "dynamodb:GetShardIterator",
+        "dynamodb:DescribeStream",
+        "dynamodb:ListStreams"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/PaymentOutboxTable/stream/*"
+      ]
+    },
+    {
+      "Sid": "DenySensitiveOperations",
+      "Effect": "Deny",
+      "Action": [
+        "sqs:*",
+        "dynamodb:*"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "false"
+        }
+      }
+    },
+    {
+      "Sid": "RequireEncryptedStorage",
+      "Effect": "Deny",
+      "Action": [
+        "dynamodb:CreateTable"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEquals": {
+          "dynamodb:ServerSideEncryption": "true"
+        }
+      }
+    }
+  ],
+  "Description": "Política IAM para el sistema de procesamiento de pagos con eventos. Otorga permisos específicos para operaciones de SQS FIFO y DynamoDB, incluyendo tablas de pagos, outbox y stream de eventos. Incluye restricciones de seguridad para forzar TLS y cifrado en reposo."
+}
